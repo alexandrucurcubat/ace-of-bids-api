@@ -91,53 +91,6 @@ export class UserService {
     );
   }
 
-  // paginate(options: IPaginationOptions): Observable<Pagination<IUser>> {
-  //   return from(paginate<IUser>(this.userRepository, options)).pipe(
-  //     catchError((err) => throwError(err)),
-  //   );
-  // }
-
-  // paginateFilterByUsername(
-  //   options: IPaginationOptions,
-  //   user: IUser,
-  // ): Observable<Pagination<IUser>> {
-  //   return from(
-  //     this.userRepository.findAndCount({
-  //       skip: options.page * options.limit || 0,
-  //       take: options.limit || 10,
-  //       order: { id: 'ASC' },
-  //       select: ['id', 'username', 'email', 'role'],
-  //       where: [{ username: Like(`%${user.username}%`) }],
-  //     }),
-  //   ).pipe(
-  //     map(([users, totalUsers]) => {
-  //       const usersPageable: Pagination<IUser> = {
-  //         items: users,
-  //         links: {
-  //           first: options.route + `?limit=${options.limit}`,
-  //           previous: options.route + ``,
-  //           next:
-  //             options.route +
-  //             `?limit=${options.limit}&page=${options.page + 1}`,
-  //           last:
-  //             options.route +
-  //             `?limit=${options.limit}&page=${Math.ceil(
-  //               totalUsers / options.limit,
-  //             )}`,
-  //         },
-  //         meta: {
-  //           currentPage: options.page,
-  //           itemCount: users.length,
-  //           itemsPerPage: options.limit,
-  //           totalItems: totalUsers,
-  //           totalPages: Math.ceil(totalUsers / options.limit),
-  //         },
-  //       };
-  //       return usersPageable;
-  //     }),
-  //   );
-  // }
-
   private findUserByEmail(email: string): Observable<IUser> {
     return from(
       this.userRepository.findOne(

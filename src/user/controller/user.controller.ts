@@ -7,8 +7,8 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
+import ms = require('ms');
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { IUser } from '../models/user.interface';
 import { UserService } from '../services/user.service';
 import { CreateUserDto } from '../models/dto/create-user.dto';
@@ -35,7 +35,7 @@ export class UserController {
         (token: string): IAuthResponse => {
           return {
             token,
-            expiresIn: 10000,
+            expiresIn: ms(process.env.JWT_EXPIRES_IN) / 1000,
           };
         },
       ),
