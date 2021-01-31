@@ -29,14 +29,13 @@ export class UserController {
 
   @Post('login')
   @HttpCode(200)
-  login(@Body() loginUserDto: LoginUserDto): Observable<any> {
+  login(@Body() loginUserDto: LoginUserDto): Observable<IAuthResponse> {
     return this.userService.login(loginUserDto).pipe(
       map(
         (token: string): IAuthResponse => {
           return {
-            access_token: token,
-            token_type: 'JWT',
-            expires_in: 10000,
+            token,
+            expiresIn: 10000,
           };
         },
       ),
