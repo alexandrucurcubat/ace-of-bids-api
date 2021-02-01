@@ -11,7 +11,7 @@ import ms = require('ms');
 
 import { IUser } from '../models/user.interface';
 import { UserService } from '../services/user.service';
-import { CreateUserDto } from '../models/dto/create-user.dto';
+import { RegisterUserDto } from '../models/dto/register-user.dto';
 import { LoginUserDto } from '../models/dto/login-user.dto';
 import { map } from 'rxjs/operators';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
@@ -23,8 +23,8 @@ export class UserController {
 
   @Post('register')
   @HttpCode(201)
-  create(@Body() createUserDto: CreateUserDto): Observable<IUser> {
-    return this.userService.create(createUserDto);
+  register(@Body() registerUserDto: RegisterUserDto): Observable<IUser> {
+    return this.userService.register(registerUserDto);
   }
 
   @Post('login')

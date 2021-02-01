@@ -5,7 +5,7 @@ import { from, Observable, throwError } from 'rxjs';
 import { catchError, map, switchMap } from 'rxjs/operators';
 
 import { AuthService } from 'src/auth/services/auth.service';
-import { CreateUserDto } from '../models/dto/create-user.dto';
+import { RegisterUserDto } from '../models/dto/register-user.dto';
 import { UserEntity } from '../models/user.entity';
 import { IUser } from '../models/user.interface';
 import { LoginUserDto } from '../models/dto/login-user.dto';
@@ -18,16 +18,35 @@ export class UserService {
     private authService: AuthService,
   ) {}
 
-  create(createUserDto: CreateUserDto): Observable<IUser> {
-    return this.emailExists(createUserDto.email).pipe(
-      switchMap((exists: boolean) => {
-        if (!exists) {
-          return this.authService.hashPassword(createUserDto.password).pipe(
-            switchMap((passwordHash: string) => {
-              createUserDto.password = passwordHash;
-              return from(this.userRepository.save(createUserDto)).pipe(
-                catchError((err) => throwError(err)),
-              );
+  register(registerUserDto: RegisterUserDto): Observable<IUser> {
+    return this.emailExists(registerUserDto.email).pipe(
+      switchMap((emailExists: boolean) => {
+        if (!emailExists) {
+          return this.usernameExists(registerUserDto.username).pipe(
+            switchMap((usernameExists: boolean) => {
+              if (!usernameExists) {
+                return this.authService
+                  .hashPassword(registerUserDto.password)
+                  .pipe(
+                    switchMap((passwordHash: string) => {
+                      registerUserDto.password = passwordHash;
+                      return from(
+                        this.userRepository.save(registerUserDto),
+                      ).pipe(
+                        map((savedUser: IUser) => {
+                          const { password, ...user } = savedUser;
+                          return user;
+                        }),
+                        catchError((err) => throwError(err)),
+                      );
+                    }),
+                  );
+              } else {
+                throw new HttpException(
+                  'Username aldready exists',
+                  HttpStatus.CONFLICT,
+                );
+              }
             }),
           );
         } else {
@@ -38,6 +57,7 @@ export class UserService {
   }
 
   login(loginUserDto: LoginUserDto): Observable<string> {
+    console.log(loginUserDto);
     return this.findUserByEmail(loginUserDto.email).pipe(
       switchMap((user: IUser) => {
         if (user) {
@@ -55,14 +75,17 @@ export class UserService {
                 );
               } else {
                 throw new HttpException(
-                  'Invalid password',
+                  'Invalid credentials',
                   HttpStatus.UNAUTHORIZED,
                 );
               }
             }),
           );
         } else {
-          throw new HttpException('Email not found', HttpStatus.NOT_FOUND);
+          throw new HttpException(
+            'Invalid credentials',
+            HttpStatus.UNAUTHORIZED,
+          );
         }
       }),
     );
@@ -109,6 +132,12 @@ export class UserService {
 
   private emailExists(email: string): Observable<boolean> {
     return from(this.userRepository.findOne({ email })).pipe(
+      map((user: IUser) => (user ? true : false)),
+    );
+  }
+
+  private usernameExists(username: string): Observable<boolean> {
+    return from(this.userRepository.findOne({ username })).pipe(
       map((user: IUser) => (user ? true : false)),
     );
   }
