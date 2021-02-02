@@ -17,7 +17,7 @@ export class AuthService {
   constructor(
     @InjectRepository(UserEntity)
     private userRepository: Repository<UserEntity>,
-    private readonly jwtService: JwtService,
+    private jwtService: JwtService,
   ) {}
 
   register(registerDto: RegisterDto): Observable<IUser> {
