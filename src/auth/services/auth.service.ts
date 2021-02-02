@@ -1,4 +1,10 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import {
+  forwardRef,
+  HttpException,
+  HttpStatus,
+  Inject,
+  Injectable,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -11,12 +17,15 @@ import { RegisterDto } from '../models/dto/register.dto';
 import { catchError, map, switchMap } from 'rxjs/operators';
 import { LoginDto } from '../models/dto/login.dto';
 import { IJwt } from '../models/jwt.interface';
+import { UserService } from 'src/user/services/user.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     @InjectRepository(UserEntity)
     private userRepository: Repository<UserEntity>,
+    @Inject(forwardRef(() => UserService))
+    private userService: UserService,
     private jwtService: JwtService,
   ) {}
 
@@ -28,12 +37,12 @@ export class AuthService {
             switchMap((usernameExists: boolean) => {
               if (!usernameExists) {
                 return this.hashPassword(registerDto.password).pipe(
-                  switchMap((passwordHash: string) => {
-                    registerDto.password = passwordHash;
+                  switchMap((hashedPassword: string) => {
+                    registerDto.password = hashedPassword;
                     return from(this.userRepository.save(registerDto)).pipe(
                       map((savedUser: IUser) => {
-                        const { password, ...user } = savedUser;
-                        return user;
+                        delete savedUser.password;
+                        return savedUser;
                       }),
                       catchError((err) => throwError(err)),
                     );
@@ -52,16 +61,14 @@ export class AuthService {
   }
 
   login(loginDto: LoginDto): Observable<IJwt> {
-    return this.findUserByEmail(loginDto.email).pipe(
+    return this.userService.findUserByEmail(loginDto.email).pipe(
       switchMap((user: IUser) => {
         if (user) {
           return this.validatePassword(loginDto.password, user.password).pipe(
             switchMap((passwordsMatches: boolean) => {
               if (passwordsMatches) {
-                const { password, ...loggedUser } = user;
-                return this.generateJwt(loggedUser).pipe(
-                  map((jwt) => ({ jwt })),
-                );
+                delete user.password;
+                return this.generateJwt(user).pipe(map((jwt) => ({ jwt })));
               } else {
                 throw new HttpException(
                   'invalid credentials',
@@ -80,20 +87,21 @@ export class AuthService {
     );
   }
 
-  private findUserByEmail(email: string): Observable<IUser> {
-    return from(
-      this.userRepository.findOne(
-        { email },
-        { select: ['id', 'email', 'username', 'password'] },
-      ),
-    );
-  }
-
-  private validatePassword(
+  validatePassword(
     password: string,
     storedPasswordHash: string,
   ): Observable<boolean> {
     return this.comparePasswords(password, storedPasswordHash);
+  }
+
+  hashPassword(password: string): Observable<string> {
+    return from(bcrypt.hash(password, 12));
+  }
+
+  usernameExists(username: string): Observable<boolean> {
+    return from(this.userRepository.findOne({ username })).pipe(
+      map((user: IUser) => (user ? true : false)),
+    );
   }
 
   private emailExists(email: string): Observable<boolean> {
@@ -102,18 +110,8 @@ export class AuthService {
     );
   }
 
-  private usernameExists(username: string): Observable<boolean> {
-    return from(this.userRepository.findOne({ username })).pipe(
-      map((user: IUser) => (user ? true : false)),
-    );
-  }
-
   private generateJwt(user: IUser): Observable<string> {
     return from(this.jwtService.signAsync({ user }));
-  }
-
-  private hashPassword(password: string): Observable<string> {
-    return from(bcrypt.hash(password, 12));
   }
 
   private comparePasswords(
