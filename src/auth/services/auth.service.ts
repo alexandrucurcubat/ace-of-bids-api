@@ -40,15 +40,12 @@ export class AuthService {
                   }),
                 );
               } else {
-                throw new HttpException(
-                  'Username aldready exists',
-                  HttpStatus.CONFLICT,
-                );
+                throw new HttpException('username exists', HttpStatus.CONFLICT);
               }
             }),
           );
         } else {
-          throw new HttpException('Email aldready exists', HttpStatus.CONFLICT);
+          throw new HttpException('email exists', HttpStatus.CONFLICT);
         }
       }),
     );
@@ -61,10 +58,13 @@ export class AuthService {
           return this.validatePassword(loginDto.password, user.password).pipe(
             switchMap((passwordsMatches: boolean) => {
               if (passwordsMatches) {
-                return this.generateJwt(user).pipe(map((jwt) => ({ jwt })));
+                const { password, ...loggedUser } = user;
+                return this.generateJwt(loggedUser).pipe(
+                  map((jwt) => ({ jwt })),
+                );
               } else {
                 throw new HttpException(
-                  'Invalid credentials',
+                  'invalid credentials',
                   HttpStatus.UNAUTHORIZED,
                 );
               }
@@ -72,7 +72,7 @@ export class AuthService {
           );
         } else {
           throw new HttpException(
-            'Invalid credentials',
+            'invalid credentials',
             HttpStatus.UNAUTHORIZED,
           );
         }
