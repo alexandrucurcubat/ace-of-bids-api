@@ -7,7 +7,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
-import { LoggingInterceptor } from './shared/logging.interceptor';
+import { LoggingInterceptor } from './core/logging.interceptor';
 
 @Module({
   imports: [
