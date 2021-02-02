@@ -1,4 +1,5 @@
 import { Controller, Get, HttpCode, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth } from '@nestjs/swagger';
 import { Observable } from 'rxjs';
 
 import { UserService } from '../services/user.service';
@@ -12,6 +13,7 @@ export class UserController {
   @UseGuards(JwtAuthGuard)
   @Get()
   @HttpCode(200)
+  @ApiBearerAuth()
   // @HasRoles('admin')
   findAll(): Observable<IUser[]> {
     return this.userService.findAll();
