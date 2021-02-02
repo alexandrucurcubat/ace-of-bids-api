@@ -108,15 +108,15 @@ export class AuthService {
     );
   }
 
-  generateJwt(user: IUser): Observable<string> {
+  private generateJwt(user: IUser): Observable<string> {
     return from(this.jwtService.signAsync({ user }));
   }
 
-  hashPassword(password: string): Observable<string> {
+  private hashPassword(password: string): Observable<string> {
     return from(bcrypt.hash(password, 12));
   }
 
-  comparePasswords(
+  private comparePasswords(
     password: string,
     storedPasswordHash: string,
   ): Observable<any> {
