@@ -8,7 +8,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { from, Observable, throwError } from 'rxjs';
+import { from, Observable, of, throwError } from 'rxjs';
 import * as bcrypt from 'bcrypt';
 
 import { IUser } from 'src/user/models/user.interface';
@@ -18,6 +18,8 @@ import { catchError, map, switchMap } from 'rxjs/operators';
 import { LoginDto } from '../models/dto/login.dto';
 import { IJwt } from '../models/jwt.interface';
 import { UserService } from 'src/user/services/user.service';
+import { UpdatePasswordDto } from 'src/auth/models/dto/update-password.dto';
+import { UpdateUsernameDto } from 'src/auth/models/dto/update-username.dto';
 
 @Injectable()
 export class AuthService {
@@ -87,18 +89,119 @@ export class AuthService {
     );
   }
 
-  validatePassword(
+  updateUsername(
+    id: number,
+    updateUsernameDto: UpdateUsernameDto,
+  ): Observable<IUser> {
+    const newUsername = updateUsernameDto.username;
+    return this.userService.findUserById(id).pipe(
+      switchMap((user: IUser) => {
+        return this.validatePassword(
+          updateUsernameDto.oldPassword,
+          user.password,
+        ).pipe(
+          switchMap((passwordMatches: boolean) => {
+            if (passwordMatches) {
+              if (user.username !== newUsername) {
+                return this.usernameExists(newUsername).pipe(
+                  switchMap((emailExists: boolean) => {
+                    if (emailExists) {
+                      throw new HttpException(
+                        'email exists',
+                        HttpStatus.CONFLICT,
+                      );
+                    } else {
+                      return from(
+                        this.userRepository.update(id, {
+                          username: newUsername,
+                        }),
+                      )
+                        .pipe(
+                          switchMap(() => this.userService.findUserById(id)),
+                        )
+                        .pipe(
+                          switchMap((user: IUser) => {
+                            return this.generateJwt(user).pipe(
+                              map((jwt: string) => {
+                                user.jwt = jwt;
+                                delete user.password;
+                                return user;
+                              }),
+                            );
+                          }),
+                        );
+                    }
+                  }),
+                );
+              } else {
+                delete user.password;
+                return of(user);
+              }
+            } else {
+              throw new HttpException(
+                'invalid credentials',
+                HttpStatus.UNAUTHORIZED,
+              );
+            }
+          }),
+        );
+      }),
+    );
+  }
+
+  updatePassword(
+    id: number,
+    updatePasswordDto: UpdatePasswordDto,
+  ): Observable<IUser> {
+    const newPassword = updatePasswordDto.newPassword;
+    return this.userService.findUserById(id).pipe(
+      switchMap((user: IUser) => {
+        return this.validatePassword(
+          updatePasswordDto.oldPassword,
+          user.password,
+        ).pipe(
+          switchMap((passwordMatches: boolean) => {
+            if (passwordMatches) {
+              return this.hashPassword(newPassword).pipe(
+                switchMap((hashedPassword: string) => {
+                  return from(
+                    this.userRepository.update(id, {
+                      password: hashedPassword,
+                    }),
+                  )
+                    .pipe(switchMap(() => this.userService.findUserById(id)))
+                    .pipe(
+                      map((user: IUser) => {
+                        delete user.password;
+                        return user;
+                      }),
+                    );
+                }),
+              );
+            } else {
+              throw new HttpException(
+                'invalid credentials',
+                HttpStatus.UNAUTHORIZED,
+              );
+            }
+          }),
+        );
+      }),
+    );
+  }
+
+  private validatePassword(
     password: string,
     storedPasswordHash: string,
   ): Observable<boolean> {
     return this.comparePasswords(password, storedPasswordHash);
   }
 
-  hashPassword(password: string): Observable<string> {
+  private hashPassword(password: string): Observable<string> {
     return from(bcrypt.hash(password, 12));
   }
 
-  usernameExists(username: string): Observable<boolean> {
+  private usernameExists(username: string): Observable<boolean> {
     return from(this.userRepository.findOne({ username })).pipe(
       map((user: IUser) => (user ? true : false)),
     );

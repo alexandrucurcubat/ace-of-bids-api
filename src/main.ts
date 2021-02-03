@@ -8,8 +8,6 @@ import { version } from '../package.json';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  app.setGlobalPrefix('api');
-
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Ace of Bids')
     .setDescription('Ace of Bids API description')
@@ -18,6 +16,8 @@ async function bootstrap() {
     .build();
   const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);
   SwaggerModule.setup('swagger', app, swaggerDocument);
+
+  app.setGlobalPrefix('api');
 
   app.enableCors({
     origin: '*',
