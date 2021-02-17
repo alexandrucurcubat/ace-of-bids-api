@@ -3,7 +3,6 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
 
 import { AppModule } from './app.module';
-import { version } from '../package.json';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -11,13 +10,11 @@ async function bootstrap() {
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Ace of Bids')
     .setDescription('Ace of Bids API description')
-    .setVersion(version)
+    .setVersion('0.0.1')
     .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'Token' })
     .build();
   const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup('swagger', app, swaggerDocument);
-
-  app.setGlobalPrefix('api');
+  SwaggerModule.setup('api', app, swaggerDocument);
 
   app.enableCors({
     origin: '*',
@@ -28,6 +25,6 @@ async function bootstrap() {
 
   app.useGlobalPipes(new ValidationPipe());
 
-  await app.listen(3000);
+  await app.listen(process.env.PORT || 8080);
 }
 bootstrap();
