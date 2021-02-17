@@ -1,6 +1,7 @@
 import { forwardRef, Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
+import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { AuthService } from './services/auth.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
@@ -8,6 +9,8 @@ import { JwtStrategy } from './guards/jwt.strategy';
 import { HasRolesGuard } from './guards/has-roles.guard';
 import { IsOwnerGuard } from './guards/is-owner.guard';
 import { UserModule } from 'src/user/user.module';
+import { UserEntity } from 'src/user/models/user.entity';
+import { AuthController } from './controller/auth.controller';
 
 @Module({
   imports: [
@@ -17,9 +20,10 @@ import { UserModule } from 'src/user/user.module';
       inject: [ConfigService],
       useFactory: async (configService: ConfigService) => ({
         secret: configService.get('JWT_SECRET'),
-        signOptions: { expiresIn: '10000s' },
+        signOptions: { expiresIn: configService.get('JWT_EXPIRES_IN') },
       }),
     }),
+    TypeOrmModule.forFeature([UserEntity]),
   ],
   providers: [
     AuthService,
@@ -28,6 +32,7 @@ import { UserModule } from 'src/user/user.module';
     HasRolesGuard,
     IsOwnerGuard,
   ],
+  controllers: [AuthController],
   exports: [AuthService],
 })
 export class AuthModule {}

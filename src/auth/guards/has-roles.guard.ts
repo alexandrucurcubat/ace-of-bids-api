@@ -33,7 +33,7 @@ export class HasRolesGuard implements CanActivate {
     const request = context.switchToHttp().getRequest();
     const user: IUser = request.user;
 
-    return this.userService.findOne(user.id).pipe(
+    return this.userService.findUserById(user.id).pipe(
       map((user: IUser) => {
         const isAuthorized = requiredRoles.indexOf(user.role) > -1;
         return user && isAuthorized;

@@ -1,53 +1,21 @@
-import {
-  Body,
-  Controller,
-  Get,
-  HttpCode,
-  Post,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, HttpCode, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth } from '@nestjs/swagger';
 import { Observable } from 'rxjs';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { IUser } from '../models/user.interface';
 import { UserService } from '../services/user.service';
-import { CreateUserDto } from '../models/dto/create-user.dto';
-import { LoginUserDto } from '../models/dto/login-user.dto';
-import { map } from 'rxjs/operators';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
-import { IAuthResponse } from '../models/auth-response.interface';
+import { IUser } from '../models/user.interface';
 
 @Controller('users')
 export class UserController {
   constructor(private userService: UserService) {}
 
-  @Post('register')
-  @HttpCode(201)
-  create(@Body() createUserDto: CreateUserDto): Observable<IUser> {
-    return this.userService.create(createUserDto);
-  }
-
-  @Post('login')
-  @HttpCode(200)
-  login(@Body() loginUserDto: LoginUserDto): Observable<any> {
-    return this.userService.login(loginUserDto).pipe(
-      map(
-        (token: string): IAuthResponse => {
-          return {
-            access_token: token,
-            token_type: 'JWT',
-            expires_in: 10000,
-          };
-        },
-      ),
-    );
-  }
-
   @UseGuards(JwtAuthGuard)
   @Get()
   @HttpCode(200)
+  @ApiBearerAuth()
   // @HasRoles('admin')
   findAll(): Observable<IUser[]> {
-    return this.userService.findAll();
+    return this.userService.findAllUsers();
   }
 }

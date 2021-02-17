@@ -25,7 +25,7 @@ export class IsOwnerGuard implements CanActivate {
     const params = request.params;
     const user: IUser = request.user;
 
-    return this.userService.findOne(user.id).pipe(
+    return this.userService.findUserById(user.id).pipe(
       map((user: IUser) => {
         const isAuthorized = user.id === +params.id;
         return user && isAuthorized;
