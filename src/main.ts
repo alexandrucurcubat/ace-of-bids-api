@@ -10,7 +10,7 @@ async function bootstrap() {
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Ace of Bids')
     .setDescription('Ace of Bids API description')
-    .setVersion('0.0.1')
+    .setVersion(`${process.env.npm_package_version}`)
     .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'Token' })
     .build();
   const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);
