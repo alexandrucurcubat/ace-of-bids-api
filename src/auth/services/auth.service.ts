@@ -104,10 +104,10 @@ export class AuthService {
             if (passwordMatches) {
               if (user.username !== newUsername) {
                 return this.usernameExists(newUsername).pipe(
-                  switchMap((emailExists: boolean) => {
-                    if (emailExists) {
+                  switchMap((usernameExists: boolean) => {
+                    if (usernameExists) {
                       throw new HttpException(
-                        'email exists',
+                        'username exists',
                         HttpStatus.CONFLICT,
                       );
                     } else {
