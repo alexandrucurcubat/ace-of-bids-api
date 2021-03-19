@@ -1,6 +1,6 @@
 import { BeforeInsert, Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
-import { UserRole } from './user.interface';
+import { UserRole } from './user-role.enum';
 
 @Entity()
 export class UserEntity {

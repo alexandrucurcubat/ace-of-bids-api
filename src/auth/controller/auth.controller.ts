@@ -12,7 +12,7 @@ import { AuthService } from '../services/auth.service';
 import { RegisterDto } from '../models/dto/register.dto';
 import { LoginDto } from '../models/dto/login.dto';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
-import { IsOwnerGuard } from '../guards/is-owner.guard';
+import { ParamGuard } from '../guards/param.guard';
 import { UpdateUsernameDto } from 'src/auth/models/dto/update-username.dto';
 import { UpdatePasswordDto } from 'src/auth/models/dto/update-password.dto';
 
@@ -32,7 +32,7 @@ export class AuthController {
     return this.authService.login(loginDto);
   }
 
-  @UseGuards(JwtAuthGuard, IsOwnerGuard)
+  @UseGuards(JwtAuthGuard, ParamGuard)
   @Post('update/username/:id')
   @HttpCode(200)
   @ApiBearerAuth()
@@ -43,7 +43,7 @@ export class AuthController {
     return this.authService.updateUsername(id, updateUsernameDto);
   }
 
-  @UseGuards(JwtAuthGuard, IsOwnerGuard)
+  @UseGuards(JwtAuthGuard, ParamGuard)
   @Post('update/password/:id')
   @HttpCode(200)
   @ApiBearerAuth()

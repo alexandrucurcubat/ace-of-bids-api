@@ -18,6 +18,11 @@ import { IJwtResponse } from '../models/jwt-response.interface';
 import { UserService } from 'src/user/services/user.service';
 import { UpdatePasswordDto } from 'src/auth/models/dto/update-password.dto';
 import { UpdateUsernameDto } from 'src/auth/models/dto/update-username.dto';
+import {
+  EMAIL_EXISTS,
+  INVALID_CREDENTIALS,
+  USERNAME_EXISTS,
+} from 'src/utils/exception-constants';
 
 @Injectable()
 export class AuthService {
@@ -33,73 +38,58 @@ export class AuthService {
     const email = registerDto.email;
     const username = registerDto.username;
     const password = registerDto.password;
-    if (!(await this.emailExists(email))) {
-      if (!(await this.usernameExists(username))) {
-        registerDto.password = await this.hashPassword(password);
-        const user = (await this.userRepository.save(registerDto)) as IUser;
-        delete user.password;
-        return user;
-      } else {
-        throw new HttpException('username exists', HttpStatus.CONFLICT);
-      }
-    } else {
-      throw new HttpException('email exists', HttpStatus.CONFLICT);
-    }
+    if (await this.emailExists(email))
+      throw new HttpException(EMAIL_EXISTS, HttpStatus.CONFLICT);
+    if (await this.usernameExists(username))
+      throw new HttpException(USERNAME_EXISTS, HttpStatus.CONFLICT);
+    registerDto.password = await this.hashPassword(password);
+    const user = (await this.userRepository.save(registerDto)) as IUser;
+    delete user.password;
+    return user;
   }
 
   async login(loginDto: LoginDto) {
     const email = loginDto.email;
     const password = loginDto.password;
     const user = await this.findUserByEmail(email);
-    if (user) {
-      if (await this.validatePassword(password, user.password)) {
-        delete user.password;
-        return { jwt: await this.generateJwt(user) } as IJwtResponse;
-      } else {
-        throw new HttpException('invalid credentials', HttpStatus.UNAUTHORIZED);
-      }
-    } else {
-      throw new HttpException('invalid credentials', HttpStatus.UNAUTHORIZED);
-    }
+    if (!user)
+      throw new HttpException(INVALID_CREDENTIALS, HttpStatus.UNAUTHORIZED);
+    if (!(await this.passwordMatches(password, user.password)))
+      throw new HttpException(INVALID_CREDENTIALS, HttpStatus.UNAUTHORIZED);
+    delete user.password;
+    return { jwt: await this.generateJwt(user) } as IJwtResponse;
   }
 
   async updateUsername(id: number, updateUsernameDto: UpdateUsernameDto) {
     const username = updateUsernameDto.username;
     const password = updateUsernameDto.password;
     const user = await this.userService.findUserById(id);
-    if (await this.validatePassword(password, user.password)) {
-      if (user.username !== username) {
-        if (await this.usernameExists(username)) {
-          throw new HttpException('username exists', HttpStatus.CONFLICT);
-        } else {
-          await this.userRepository.update(id, { username });
-          const updatedUser = await this.userService.findUserById(id);
-          updatedUser.jwt = await this.generateJwt(updatedUser);
-          delete updatedUser.password;
-          return updatedUser;
-        }
-      } else {
-        delete user.password;
-        return user;
-      }
-    } else {
-      throw new HttpException('invalid credentials', HttpStatus.UNAUTHORIZED);
+    if (!(await this.passwordMatches(password, user.password)))
+      throw new HttpException(INVALID_CREDENTIALS, HttpStatus.UNAUTHORIZED);
+    if (user.username === username) {
+      delete user.password;
+      return user;
     }
+    if (await this.usernameExists(username))
+      throw new HttpException(USERNAME_EXISTS, HttpStatus.CONFLICT);
+    await this.userRepository.update(id, { username });
+    const updatedUser = await this.userService.findUserById(id);
+    updatedUser.jwt = await this.generateJwt(updatedUser);
+    delete updatedUser.password;
+    return updatedUser;
   }
 
   async updatePassword(id: number, updatePasswordDto: UpdatePasswordDto) {
     const newPassword = updatePasswordDto.newPassword;
     const oldPassword = updatePasswordDto.oldPassword;
     const user = await this.userService.findUserById(id);
-    if (await this.validatePassword(oldPassword, user.password)) {
-      this.userRepository.update(id, {
-        password: await this.hashPassword(newPassword),
-      });
-      delete user.password;
-      return user;
-    } else {
-      throw new HttpException('invalid credentials', HttpStatus.UNAUTHORIZED);
-    }
+    if (!(await this.passwordMatches(oldPassword, user.password)))
+      throw new HttpException(INVALID_CREDENTIALS, HttpStatus.UNAUTHORIZED);
+    this.userRepository.update(id, {
+      password: await this.hashPassword(newPassword),
+    });
+    delete user.password;
+    return user;
   }
 
   private findUserByEmail(email: string) {
@@ -117,19 +107,15 @@ export class AuthService {
     return (await this.userRepository.findOne({ username })) ? true : false;
   }
 
-  private generateJwt(user: IUser) {
-    return this.jwtService.signAsync({ user });
-  }
-
-  private validatePassword(password: string, storedPasswordHash: string) {
-    return this.comparePasswords(password, storedPasswordHash);
-  }
-
-  private comparePasswords(password: string, storedPasswordHash: string) {
+  private passwordMatches(password: string, storedPasswordHash: string) {
     return bcrypt.compare(password, storedPasswordHash);
   }
 
   private hashPassword(password: string) {
     return bcrypt.hash(password, 12);
+  }
+
+  private generateJwt(user: IUser) {
+    return this.jwtService.signAsync({ user });
   }
 }

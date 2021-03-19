@@ -15,7 +15,7 @@ export class UserService {
   findUserById(id: number) {
     return this.userRepository.findOne(
       { id },
-      { select: ['id', 'email', 'username', 'password'] },
+      { select: ['id', 'email', 'username', 'password', 'role'] },
     ) as Promise<IUser>;
   }
 
