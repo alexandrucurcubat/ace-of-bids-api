@@ -6,10 +6,7 @@ import {
   Injectable,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
 
-import { IUser } from 'src/user/models/user.interface';
 import { UserService } from 'src/user/services/user.service';
 
 @Injectable()
@@ -20,9 +17,7 @@ export class HasRolesGuard implements CanActivate {
     private userService: UserService,
   ) {}
 
-  canActivate(
-    context: ExecutionContext,
-  ): boolean | Promise<boolean> | Observable<boolean> {
+  async canActivate(context: ExecutionContext) {
     const requiredRoles = this.reflector.get<string[]>(
       'roles',
       context.getHandler(),
@@ -31,13 +26,7 @@ export class HasRolesGuard implements CanActivate {
       return true;
     }
     const request = context.switchToHttp().getRequest();
-    const user: IUser = request.user;
-
-    return this.userService.findUserById(user.id).pipe(
-      map((user: IUser) => {
-        const isAuthorized = requiredRoles.indexOf(user.role) > -1;
-        return user && isAuthorized;
-      }),
-    );
+    const user = await this.userService.findUserById(request.user.id);
+    return user && requiredRoles.indexOf(user.role) > -1;
   }
 }

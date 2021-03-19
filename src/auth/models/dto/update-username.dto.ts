@@ -5,7 +5,7 @@ export class UpdateUsernameDto {
   @IsNotEmpty()
   @IsString()
   @ApiProperty({ required: true })
-  oldPassword: string;
+  password: string;
 
   @IsNotEmpty()
   @IsString()

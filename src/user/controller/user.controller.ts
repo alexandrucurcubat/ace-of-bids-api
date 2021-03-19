@@ -1,10 +1,8 @@
 import { Controller, Get, HttpCode, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth } from '@nestjs/swagger';
-import { Observable } from 'rxjs';
 
 import { UserService } from '../services/user.service';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
-import { IUser } from '../models/user.interface';
 
 @Controller('users')
 export class UserController {
@@ -15,7 +13,7 @@ export class UserController {
   @HttpCode(200)
   @ApiBearerAuth()
   // @HasRoles('admin')
-  findAll(): Observable<IUser[]> {
+  findAll() {
     return this.userService.findAllUsers();
   }
 }

@@ -6,14 +6,11 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
-import { Observable } from 'rxjs';
 import { ApiBearerAuth } from '@nestjs/swagger';
 
 import { AuthService } from '../services/auth.service';
 import { RegisterDto } from '../models/dto/register.dto';
 import { LoginDto } from '../models/dto/login.dto';
-import { IUser } from 'src/user/models/user.interface';
-import { IJwt } from '../models/jwt.interface';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { IsOwnerGuard } from '../guards/is-owner.guard';
 import { UpdateUsernameDto } from 'src/auth/models/dto/update-username.dto';
@@ -25,13 +22,13 @@ export class AuthController {
 
   @Post('register')
   @HttpCode(201)
-  register(@Body() registerDto: RegisterDto): Observable<IUser> {
+  register(@Body() registerDto: RegisterDto) {
     return this.authService.register(registerDto);
   }
 
   @Post('login')
   @HttpCode(200)
-  login(@Body() loginDto: LoginDto): Observable<IJwt> {
+  login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);
   }
 
@@ -42,7 +39,7 @@ export class AuthController {
   updateUsername(
     @Param('id') id: number,
     @Body() updateUsernameDto: UpdateUsernameDto,
-  ): Observable<IUser> {
+  ) {
     return this.authService.updateUsername(id, updateUsernameDto);
   }
 
@@ -53,7 +50,7 @@ export class AuthController {
   updatePassword(
     @Param('id') id: number,
     @Body() updatePasswordDto: UpdatePasswordDto,
-  ): Observable<IUser> {
+  ) {
     return this.authService.updatePassword(id, updatePasswordDto);
   }
 }

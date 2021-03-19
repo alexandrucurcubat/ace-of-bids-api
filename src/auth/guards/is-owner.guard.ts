@@ -5,10 +5,7 @@ import {
   Inject,
   Injectable,
 } from '@nestjs/common';
-import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
 
-import { IUser } from 'src/user/models/user.interface';
 import { UserService } from 'src/user/services/user.service';
 
 @Injectable()
@@ -18,18 +15,9 @@ export class IsOwnerGuard implements CanActivate {
     private userService: UserService,
   ) {}
 
-  canActivate(
-    context: ExecutionContext,
-  ): boolean | Promise<boolean> | Observable<boolean> {
+  async canActivate(context: ExecutionContext) {
     const request = context.switchToHttp().getRequest();
-    const params = request.params;
-    const user: IUser = request.user;
-
-    return this.userService.findUserById(user.id).pipe(
-      map((user: IUser) => {
-        const isAuthorized = user.id === +params.id;
-        return user && isAuthorized;
-      }),
-    );
+    const user = await this.userService.findUserById(request.user.id);
+    return user && user.id === +request.params.id;
   }
 }
