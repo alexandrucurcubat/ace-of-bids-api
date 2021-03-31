@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
+import { MailerService } from '@nestjs-modules/mailer';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 
@@ -22,7 +23,10 @@ import {
   EMAIL_EXISTS,
   INVALID_CREDENTIALS,
   USERNAME_EXISTS,
+  USER_UNCONFIRMED,
+  USER_CONFIRMED,
 } from 'src/utils/exception-constants';
+import { EmailConfirmationDto } from '../models/dto/email-confirmation.dto';
 
 @Injectable()
 export class AuthService {
@@ -32,6 +36,7 @@ export class AuthService {
     @Inject(forwardRef(() => UserService))
     private userService: UserService,
     private jwtService: JwtService,
+    private mailerService: MailerService,
   ) {}
 
   async register(registerDto: RegisterDto) {
@@ -45,7 +50,28 @@ export class AuthService {
     registerDto.password = await this.hashPassword(password);
     const user = (await this.userRepository.save(registerDto)) as IUser;
     delete user.password;
+    await this.sendEmailConfirmation(user);
     return user;
+  }
+
+  async confirmEmail(jwt: string) {
+    try {
+      const decodedJwt = this.jwtService.verify(jwt) as any;
+      const user = decodedJwt.user;
+      await this.userRepository.update(user.id, { confirmed: true });
+      return { url: `${process.env.CLIENT_URL}/about` };
+    } catch (error) {
+      return { url: `${process.env.CLIENT_URL}/email-confirmation` };
+    }
+  }
+
+  async resendConfirmation(emailConfirmationDto: EmailConfirmationDto) {
+    const user = await this.findUserByEmail(emailConfirmationDto.email);
+    if (!user)
+      throw new HttpException(INVALID_CREDENTIALS, HttpStatus.UNAUTHORIZED);
+    if (user.confirmed)
+      throw new HttpException(USER_CONFIRMED, HttpStatus.UNAUTHORIZED);
+    await this.sendEmailConfirmation(user);
   }
 
   async login(loginDto: LoginDto) {
@@ -56,6 +82,8 @@ export class AuthService {
       throw new HttpException(INVALID_CREDENTIALS, HttpStatus.UNAUTHORIZED);
     if (!(await this.passwordMatches(password, user.password)))
       throw new HttpException(INVALID_CREDENTIALS, HttpStatus.UNAUTHORIZED);
+    if (!user.confirmed)
+      throw new HttpException(USER_UNCONFIRMED, HttpStatus.UNAUTHORIZED);
     delete user.password;
     return { jwt: await this.generateJwt(user) } as IJwtResponse;
   }
@@ -95,7 +123,7 @@ export class AuthService {
   private findUserByEmail(email: string) {
     return this.userRepository.findOne(
       { email },
-      { select: ['id', 'email', 'username', 'password'] },
+      { select: ['id', 'email', 'username', 'password', 'confirmed'] },
     ) as Promise<IUser>;
   }
 
@@ -117,5 +145,14 @@ export class AuthService {
 
   private generateJwt(user: IUser) {
     return this.jwtService.signAsync({ user });
+  }
+
+  private async sendEmailConfirmation(user: IUser) {
+    const jwt = await this.generateJwt(user);
+    this.mailerService.sendMail({
+      to: user.email,
+      subject: 'Ace of Bids - confirmare cont',
+      html: `<a href="${process.env.API_URL}/auth/confirmation/${jwt}" target="_blank">Confirmă email</a>`,
+    });
   }
 }

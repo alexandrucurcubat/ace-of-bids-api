@@ -1,9 +1,11 @@
 import {
   Body,
   Controller,
+  Get,
   HttpCode,
   Param,
   Post,
+  Redirect,
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth } from '@nestjs/swagger';
@@ -15,6 +17,7 @@ import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { ParamGuard } from '../guards/param.guard';
 import { UpdateUsernameDto } from 'src/auth/models/dto/update-username.dto';
 import { UpdatePasswordDto } from 'src/auth/models/dto/update-password.dto';
+import { EmailConfirmationDto } from '../models/dto/email-confirmation.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -24,6 +27,19 @@ export class AuthController {
   @HttpCode(201)
   register(@Body() registerDto: RegisterDto) {
     return this.authService.register(registerDto);
+  }
+
+  @Post('confirmation/resend')
+  @HttpCode(200)
+  resendConfirmation(@Body() emailConfirmationDto: EmailConfirmationDto) {
+    return this.authService.resendConfirmation(emailConfirmationDto);
+  }
+
+  @Get('confirmation/:jwt')
+  @HttpCode(200)
+  @Redirect(process.env.CLIENT_URL)
+  confirm(@Param('jwt') jwt: string) {
+    return this.authService.confirmEmail(jwt);
   }
 
   @Post('login')

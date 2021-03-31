@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { APP_INTERCEPTOR } from '@nestjs/core';
+import { MailerModule } from '@nestjs-modules/mailer';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -17,6 +18,12 @@ import { LoggingInterceptor } from './core/logging.interceptor';
       url: process.env.DATABASE_URL,
       autoLoadEntities: true,
       synchronize: true,
+    }),
+    MailerModule.forRoot({
+      transport: process.env.EMAIL,
+      defaults: {
+        from: '"Ace of Bids" <no-reply@aceofbids>',
+      },
     }),
     UserModule,
     AuthModule,
