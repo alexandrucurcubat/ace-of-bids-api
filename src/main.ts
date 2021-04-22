@@ -6,7 +6,9 @@ import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-
+  app.setGlobalPrefix('api');
+  app.enableCors({ origin: process.env.ALLOW_CORS.split(',') });
+  app.useGlobalPipes(new ValidationPipe());
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Ace of Bids')
     .setDescription('Ace of Bids API description')
@@ -15,11 +17,6 @@ async function bootstrap() {
     .build();
   const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);
   SwaggerModule.setup('api', app, swaggerDocument);
-
-  app.enableCors({ origin: process.env.ALLOW_CORS.split(',') });
-
-  app.useGlobalPipes(new ValidationPipe());
-
   await app.listen(3000);
 }
 bootstrap();
