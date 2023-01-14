@@ -13,10 +13,12 @@ export class UserService {
   ) {}
 
   findUserById(id: number) {
-    return this.userRepository.findOne(
-      { id },
-      { select: ['id', 'email', 'username', 'password', 'role'] },
-    ) as Promise<IUser>;
+    return this.userRepository.findOne({
+      where: {
+        id,
+      },
+      select: ['id', 'email', 'username', 'password', 'role'],
+    }) as Promise<IUser>;
   }
 
   findAllUsers() {

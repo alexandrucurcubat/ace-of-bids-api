@@ -56,7 +56,7 @@ export class AuthService {
 
   async confirmEmail(jwt: string) {
     try {
-      const decodedJwt = this.jwtService.verify(jwt) as any;
+      const decodedJwt = this.jwtService.verify(jwt);
       const user = decodedJwt.user;
       await this.userRepository.update(user.id, { confirmed: true });
       return { url: `${process.env.CLIENT_URL}/about` };
@@ -121,18 +121,22 @@ export class AuthService {
   }
 
   private findUserByEmail(email: string) {
-    return this.userRepository.findOne(
-      { email },
-      { select: ['id', 'email', 'username', 'password', 'confirmed'] },
-    ) as Promise<IUser>;
+    return this.userRepository.findOne({
+      where: { email },
+      select: ['id', 'email', 'username', 'password', 'confirmed'],
+    }) as Promise<IUser>;
   }
 
   private async emailExists(email: string) {
-    return (await this.userRepository.findOne({ email })) ? true : false;
+    return (await this.userRepository.findOne({ where: { email } }))
+      ? true
+      : false;
   }
 
   private async usernameExists(username: string) {
-    return (await this.userRepository.findOne({ username })) ? true : false;
+    return (await this.userRepository.findOne({ where: { username } }))
+      ? true
+      : false;
   }
 
   private passwordMatches(password: string, storedPasswordHash: string) {
